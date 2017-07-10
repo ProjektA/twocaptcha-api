@@ -164,6 +164,30 @@ class TwoCaptchaApi(object):
         # Nope, failure.
         raise OperationFailedError("Operation failed: %r" % (text,))
 
+    @_rewrite_http_to_com_err
+    @_rewrite_to_format_err(IndexError, ValueError)
+    def solve_recaptcha(self, site_key, site_url, proxy=None, proxy_type=None):
+        params = {
+            'method': 'userrecaptcha',
+            'googlekey': site_key,
+            'pageurl': site_url,
+        }
+        if proxy and proxy_type:
+            params['proxy'] = proxy
+            params['proxytype'] = proxy_type
+        text = self.get(
+            self.REQ_URL,
+            params=params,
+        ).text
+
+        # Success?
+        if '|' in text:
+            _, captcha_id = text.split('|')
+            return Captcha(self, captcha_id)
+
+        # Nope, failure.
+        raise OperationFailedError("Operation failed: %r" % (text,))
+
 
 class Captcha(object):
     """Represents a captcha that was queued for solving."""
